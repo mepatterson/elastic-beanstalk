@@ -313,7 +313,7 @@ namespace :eb do
 
     options = {
         application: EbConfig.app,
-        environment: EbConfig.environment,
+        environment: EbConfig.eb_environment || EbConfig.environment,
         version_label: find_option_app_version,
         solution_stack_name: EbConfig.solution_stack_name,
         option_settings: EbConfig.option_settings,
@@ -326,7 +326,8 @@ namespace :eb do
     options[:keep_latest] = EbConfig.keep_latest unless EbConfig.keep_latest.nil?
     options[:version_prefix] = EbConfig.version_prefix unless EbConfig.version_prefix.nil?
     options[:tier] = EbConfig.tier unless EbConfig.tier.nil?
-    
+    options[:cname_prefix] = EbConfig.custom_cname unless EbConfig.custom_cname.nil?
+
     unless EbConfig.smoke_test.nil?
       options[:smoke_test] = eval EbConfig.smoke_test
     end
