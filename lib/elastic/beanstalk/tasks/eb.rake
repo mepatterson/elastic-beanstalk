@@ -8,6 +8,8 @@ require 'yaml'
 require 'table_print'
 require 'timeout'
 
+require 'pry'
+
 namespace :eb do
 
   namespace :rds do
@@ -163,6 +165,19 @@ namespace :eb do
     # Let's be explicit regardless of 'production' being the eb's default shall we? Set RACK_ENV and RAILS_ENV based on the given environment
     EbConfig.set_option(:'aws:elasticbeanstalk:application:environment', 'RACK_ENV', "#{EbConfig.environment}")
     EbConfig.set_option(:'aws:elasticbeanstalk:application:environment', 'RAILS_ENV', "#{EbConfig.environment}")
+
+
+    # let's load secret, non-repo ENV vars from .secrets/env_vars.yml
+    secret_env_file = EbConfig.resolve_path('.secrets/env_vars.yml')
+    if File.exists? secret_env_file
+      puts "Using secret env vars from .secrets/env_vars.yml..."
+      vars = YAML::load_file secret_env_file
+      if vars[EbConfig.environment]
+        vars[EbConfig.environment].each { |key, val|
+          EbConfig.set_option(:'aws:elasticbeanstalk:application:environment', key, val)
+        }
+      end
+    end
 
     #-------------------------------------------------------------------------------
     # resolve the version and set the APP_VERSION environment variable
