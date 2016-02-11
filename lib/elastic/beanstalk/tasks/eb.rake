@@ -356,7 +356,7 @@ namespace :eb do
 
       time = Time.diff(from_time, Time.now, '%N %S')[:diff]
       success_emoji = %w[ success successful yey goldstar excellent awesome ].sample
-      send_notification "(success_emoji) Deployment of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase} finished in #{time}.", { color: 'green' }
+      send_notification "(#{success_emoji}) Deployment of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase} finished in #{time}.", { color: 'green' }
       puts "\nDeployment finished in #{time}.\n"
     rescue Exception => e
       send_notification "(ohcrap) Deployment of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase} failed.", { color: 'red' }
