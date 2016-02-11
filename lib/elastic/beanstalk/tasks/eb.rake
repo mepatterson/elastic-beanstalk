@@ -349,7 +349,7 @@ namespace :eb do
 
     user = (`id -u -n` rescue '').chomp
     user = 'Someone(?)' if user.strip.blank?
-    version = EbConfig[:options][:"aws:elasticbeanstalk:application:environment"][:APP_VERSION][0,10] rescue '?'
+    version = find_option_app_version[0,10] rescue '?'
     send_notification "(beanstalk) #{user} started deploy of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase}...", { color: 'purple' }
     begin
       EbDeployer.deploy(options)
