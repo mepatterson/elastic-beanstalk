@@ -7,7 +7,7 @@ require 'elastic/beanstalk'
 require 'yaml'
 require 'table_print'
 require 'timeout'
-
+require 'hipchat'
 require 'pry'
 
 namespace :eb do
@@ -347,9 +347,21 @@ namespace :eb do
       options[:smoke_test] = eval EbConfig.smoke_test
     end
 
-    EbDeployer.deploy(options)
+    user = (`id -u -n` rescue '').chomp
+    user = 'Someone(?)' if user.strip.blank?
+    version = EbConfig[:options][:"aws:elasticbeanstalk:application:environment"][:APP_VERSION][0,10] rescue '?'
+    send_notification "(beanstalk) #{user} started deploy of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase}...", { color: 'purple' }
+    begin
+      EbDeployer.deploy(options)
 
-    puts "\nDeployment finished in #{Time.diff(from_time, Time.now, '%N %S')[:diff]}.\n"
+      time = Time.diff(from_time, Time.now, '%N %S')[:diff]
+      success_emoji = %w[ success successful yey goldstar excellent awesome ].sample
+      send_notification "(success_emoji) Deployment of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase} finished in #{time}.", { color: 'green' }
+      puts "\nDeployment finished in #{time}.\n"
+    rescue Exception => e
+      send_notification "(ohcrap) Deployment of #{EbConfig[:app].upcase} (#{version}) to #{EbConfig.environment.to_s.upcase} failed.", { color: 'red' }
+      puts e.message
+    end
   end
 
   ###########################################
@@ -374,6 +386,26 @@ namespace :eb do
 
   ##########################################
   private
+
+  def rails_or_rack_env
+    EbConfig
+  end
+
+  def send_notification(msg, opts={})
+    return false unless EbConfig[:notifications]
+    EbConfig[:notifications].each do |service, settings|
+      case service.to_s.downcase
+      when 'hipchat'
+        send_hipchat_notification(msg, (opts[:color] || 'yellow'), settings)
+      else puts "[!] Unknown notification service: #{service}"
+      end
+    end
+  end
+
+  def send_hipchat_notification(msg, color, settings, api_version: 'v2')
+    client = HipChat::Client.new(settings[:api_token], :api_version => api_version)
+    client[settings[:room]].send('', msg, color: color, message_format: 'text')
+  end
 
   # Use the version if given, otherwise use the MD5 hash.  Make available via the eb APP_VERSION environment variable
   def find_option_app_version
